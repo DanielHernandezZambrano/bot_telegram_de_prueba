@@ -19,6 +19,7 @@ TOKEN = TOKEN_BOT
 MENU = 0
 ESPERANDO_NOTAS = 1
 VIENDO_NOTAS = 2
+BORRANDO_NOTAS = 3  
 
 # Estructura: {user_id: [lista de notas]}, carga al iniciar
 if os.path.exists('notas.json'):
@@ -36,6 +37,18 @@ def crear_menu():
     keyboard = [
         [InlineKeyboardButton("Agregar Nota", callback_data="agregar")],
         [InlineKeyboardButton("Ver Notas", callback_data="ver")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    return reply_markup
+
+def crear_menu_ver_notas():
+    """Este menu es para cuando el usuario vea las nota
+    y por si quiere eliminar algunas, es diferente al orginal (boton borrar)"""
+
+    keyboard = [
+        [InlineKeyboardButton("🗑️ Borrar Nota", callback_data="borrar")],
+        [InlineKeyboardButton("⬅️ Volvel al menú", callback_data="volver")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -94,10 +107,32 @@ async def manejar_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         await query.edit_message_text(
             texto,
-            reply_markup= crear_menu()
+            reply_markup= crear_menu_ver_notas()
             )
     
-    return MENU
+    return VIENDO_NOTAS
+
+
+async def manejar_viendo_notas(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Se ejecuta cuando el usuario hace clic en botones mientras ve notas"""
+    
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "volver":
+
+        await query.edit_message_text(
+            "Volvimos al menú",
+            reply_markup= crear_menu()
+            )
+        
+        return MENU
+    
+    elif query.data == "borrar":
+        
+        await query.edit_message_text("Dime el número de tu nota que quieres borrar")
+
+        return BORRANDO_NOTAS
 
 
 async def guardar_nota(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -125,28 +160,45 @@ async def guardar_nota(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return MENU
 
-"""
-async def ver_notas(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user # Usuario de la instancia actual
-    user_id = user.id            # Id del usuario actual
-    
-    notas = notas_usuarios[user_id] # Notas del Usuario
 
-    if not notas:
-            texto = "No tenés notas guardadas todavía."
+async def borrar_nota(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Se ejecuta cuando el usuario envía un número para borrar"""
+    
+    user_id = str(update.effective_user.id)
+    numero_texto = update.message.text
+    
+    # Validar que sea un número
+    if not numero_texto.isdigit():
+        await update.message.reply_text("Ingresa un número entero por favor")
+        
+        return BORRANDO_NOTAS # Vuelve a intentar
+    
+    # Convertir a número
+    numero = int(numero_texto) - 1
+    
+    # Validar que el número exista en la lista
+    if 0 <= numero < len(notas_usuarios[user_id]):
+
+        # Guardar la nota antes de borrarla
+        nota_eliminada = notas_usuarios[user_id].pop(numero)
+
+        with open('notas.json', 'w', encoding='utf-8') as f:
+            json.dump(notas_usuarios, f, ensure_ascii=False, indent=2)
+
+        # Mostrar qué nota se borró
+        await update.message.reply_text(
+            f"✅ Nota #{numero_texto} eliminada:\n\n"
+            f"{nota_eliminada}",
+            reply_markup=crear_menu())
+
+        return MENU
 
     else:
-        texto = "📝 Tus notas:\n\n"
-        for i, nota in enumerate(notas, 1):
-            texto += f"{i}. {nota}\n"
-        
-    await update.message.reply_text(
-        texto,
-        reply_markup= crear_menu()
-        )
-    
-    return MENU
-"""
+        await update.message.reply_text("El número ingresado no existe en tus notas")
+
+        return BORRANDO_NOTAS # Vuelve a intentar
+
+
 async def volver_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Se ejecuta con /menu"""
     await update.message.reply_text(
