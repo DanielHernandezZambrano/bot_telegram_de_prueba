@@ -233,13 +233,25 @@ def main():
                 # Manejar clicks en botones del menú
                 CallbackQueryHandler(manejar_menu, pattern="^(agregar|ver)$")
             ],
+
             ESPERANDO_NOTAS: [
                 # Recibir el texto de la nota
                 MessageHandler(filters.TEXT & ~filters.COMMAND, guardar_nota),
                 # Permitir volver al menú con /menu
                 CommandHandler('menu', volver_menu)
+            ],
+
+            VIENDO_NOTAS: [
+                # Manejar clicks en botones del menú viendo notas
+                CallbackQueryHandler(manejar_viendo_notas, pattern="^(borrar|volver)$")
+            ],
+
+            BORRANDO_NOTAS: [
+                # Recibir el numero de nota a borrar
+                MessageHandler(filters.TEXT & ~filters.COMMAND, borrar_nota),
+                # Permitir volver al menú con /menu
+                CommandHandler('menu', volver_menu)
             ]
-            # VIENDO_NOTAS no hace falta porque se maneja todo en manejar_menu
         },
         
         # ¿Cómo CANCELAR la conversación?
