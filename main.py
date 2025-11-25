@@ -48,7 +48,7 @@ def crear_menu_ver_notas():
 
     keyboard = [
         [InlineKeyboardButton("🗑️ Borrar Nota", callback_data="borrar")],
-        [InlineKeyboardButton("⬅️ Volvel al menú", callback_data="volver")]
+        [InlineKeyboardButton("⬅️ Volver al menú", callback_data="volver")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -92,7 +92,6 @@ async def manejar_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ESPERANDO_NOTAS
     
     elif query.data == "ver":
-        await query.edit_message_text("Veamos tus notas")
 
         user_id = str(update.effective_user.id)
         notas = notas_usuarios.get(user_id, [])
@@ -110,7 +109,7 @@ async def manejar_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup= crear_menu_ver_notas()
             )
     
-    return VIENDO_NOTAS
+        return VIENDO_NOTAS
 
 
 async def manejar_viendo_notas(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -201,19 +200,23 @@ async def borrar_nota(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def volver_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Se ejecuta con /menu"""
+
     await update.message.reply_text(
         "¿Qué querés hacer?",
         reply_markup=crear_menu()
     )
+
     return MENU
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Se ejecuta con /cancel"""
+
     await update.message.reply_text(
         "Conversación cancelada.\n"
         "Escribí /start para empezar de nuevo."
     )
+
     return ConversationHandler.END
 
 
